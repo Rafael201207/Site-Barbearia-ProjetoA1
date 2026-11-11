@@ -41,15 +41,16 @@ if (formAgenda) {
     var agendamentos = lerStorage('agendamentos');
     var posicaoEditando = -1;
 
-    var barbeiroDoServico = {
+    var especialistaDoServico = {
         'Corte Clássico': 'Rodrigo',
         'Barba Completa': 'Rodrigo',
         'Corte + Barba': 'Thiago',
         'Degradê': 'Thiago',
         'Pigmentação': 'Felipe',
-        'Sobrancelha': 'Felipe',
-        'Hidratação': 'Felipe'
+        'Sobrancelha': 'Felipe'
     };
+
+    var barbeiroManual = false;
 
     function guardar() {
         localStorage.setItem('agendamentos', JSON.stringify(agendamentos));
@@ -79,10 +80,35 @@ if (formAgenda) {
         return false;
     }
 
-    document.getElementById('data').min = hoje();
+    function restaurarMin() {
+        document.getElementById('data').min = hoje();
+    }
+    restaurarMin();
+
+    var dica = document.getElementById('dicaBarbeiro');
+
+    function atualizarDica(servico) {
+        var esp = especialistaDoServico[servico];
+        dica.textContent = esp
+            ? 'Especialista neste serviço: ' + esp + ' (você pode escolher outro barbeiro).'
+            : '';
+    }
 
     document.getElementById('servico').addEventListener('change', function () {
-        document.getElementById('barbeiro').value = barbeiroDoServico[this.value] || '';
+        if (!barbeiroManual) {
+            document.getElementById('barbeiro').value = especialistaDoServico[this.value] || '';
+        }
+        atualizarDica(this.value);
+    });
+
+    document.getElementById('barbeiro').addEventListener('change', function () {
+        barbeiroManual = this.value != '';
+    });
+
+    formAgenda.addEventListener('reset', function () {
+        barbeiroManual = false;
+        dica.textContent = '';
+        restaurarMin();
     });
 
     function mostrarLista() {
@@ -124,6 +150,11 @@ if (formAgenda) {
         document.getElementById('data').value = a.data;
         document.getElementById('hora').value = a.hora;
 
+        // Se o agendamento for antigo, o calendário precisa aceitar a data original
+        document.getElementById('data').min = a.data < hoje() ? a.data : hoje();
+        barbeiroManual = true;
+        atualizarDica(a.servico);
+
         posicaoEditando = i;
         document.getElementById('btnSalvar').textContent = 'Atualizar';
     }
@@ -157,7 +188,10 @@ if (formAgenda) {
             hora: document.getElementById('hora').value
         };
 
-        if (novo.data < hoje() || (novo.data == hoje() && novo.hora <= horaAgora())) {
+        var original = posicaoEditando == -1 ? null : agendamentos[posicaoEditando];
+        var mudouHorario = !original || original.data != novo.data || original.hora != novo.hora;
+
+        if (mudouHorario && (novo.data < hoje() || (novo.data == hoje() && novo.hora <= horaAgora()))) {
             alert('Esse horário já passou. Escolha uma data e hora futuras.');
             return;
         }
@@ -271,7 +305,6 @@ if (formDep) {
         formDep.reset();
     });
 
-    // Um único listener para os botões Remover
     document.getElementById('lista').addEventListener('click', function (e) {
         var botao = e.target.closest('button[data-i]');
         if (botao) remover(Number(botao.dataset.i));
