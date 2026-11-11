@@ -45,7 +45,6 @@ function mostrarLista() {
     for (var i = 0; i < agendamentos.length; i++) {
         var a = agendamentos[i];
 
-        // a data vem como 2026-11-08, aqui vira 08/11/2026
         var partes = a.data.split('-');
         var dataBr = partes[2] + '/' + partes[1] + '/' + partes[0];
 
