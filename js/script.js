@@ -41,9 +41,49 @@ if (formAgenda) {
     var agendamentos = lerStorage('agendamentos');
     var posicaoEditando = -1;
 
+    var barbeiroDoServico = {
+        'Corte Clássico': 'Rodrigo',
+        'Barba Completa': 'Rodrigo',
+        'Corte + Barba': 'Thiago',
+        'Degradê': 'Thiago',
+        'Pigmentação': 'Felipe',
+        'Sobrancelha': 'Felipe',
+        'Hidratação': 'Felipe'
+    };
+
     function guardar() {
         localStorage.setItem('agendamentos', JSON.stringify(agendamentos));
     }
+
+    function hoje() {
+        var d = new Date();
+        return d.getFullYear() + '-' +
+            String(d.getMonth() + 1).padStart(2, '0') + '-' +
+            String(d.getDate()).padStart(2, '0');
+    }
+
+    function horaAgora() {
+        var d = new Date();
+        return String(d.getHours()).padStart(2, '0') + ':' +
+            String(d.getMinutes()).padStart(2, '0');
+    }
+
+    function existeConflito(novo) {
+        for (var i = 0; i < agendamentos.length; i++) {
+            if (i == posicaoEditando) continue;
+            var a = agendamentos[i];
+            if (a.barbeiro == novo.barbeiro && a.data == novo.data && a.hora == novo.hora) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    document.getElementById('data').min = hoje();
+
+    document.getElementById('servico').addEventListener('change', function () {
+        document.getElementById('barbeiro').value = barbeiroDoServico[this.value] || '';
+    });
 
     function mostrarLista() {
         var tabela = document.getElementById('lista');
@@ -66,8 +106,8 @@ if (formAgenda) {
                 '<td>' + dataBr + '</td>' +
                 '<td>' + escaparHtml(a.hora) + '</td>' +
                 '<td>' +
-                    '<button class="btn btn-sm btn-warning" onclick="editar(' + i + ')">Editar</button> ' +
-                    '<button class="btn btn-sm btn-danger" onclick="excluir(' + i + ')">Excluir</button>' +
+                    '<button class="btn btn-sm btn-warning" data-acao="editar" data-i="' + i + '">Editar</button> ' +
+                    '<button class="btn btn-sm btn-danger" data-acao="excluir" data-i="' + i + '">Excluir</button>' +
                 '</td>' +
                 '</tr>';
         }
@@ -117,6 +157,17 @@ if (formAgenda) {
             hora: document.getElementById('hora').value
         };
 
+        if (novo.data < hoje() || (novo.data == hoje() && novo.hora <= horaAgora())) {
+            alert('Esse horário já passou. Escolha uma data e hora futuras.');
+            return;
+        }
+
+        if (existeConflito(novo)) {
+            alert('Já existe um agendamento com ' + novo.barbeiro +
+                  ' nesse dia e horário. Escolha outro horário ou outro barbeiro.');
+            return;
+        }
+
         if (posicaoEditando == -1) {
             agendamentos.push(novo);
             alert('Agendamento salvo!');
@@ -143,6 +194,15 @@ if (formAgenda) {
         }
     });
 
+    document.getElementById('lista').addEventListener('click', function (e) {
+        var botao = e.target.closest('button[data-acao]');
+        if (!botao) return;
+
+        var i = Number(botao.dataset.i);
+        if (botao.dataset.acao == 'editar') editar(i);
+        else if (botao.dataset.acao == 'excluir') excluir(i);
+    });
+
     mostrarLista();
 }
 
@@ -160,11 +220,19 @@ if (formContato) {
 var formDep = document.getElementById('formDep');
 
 if (formDep) {
-    var depoimentos = [
+    var depoimentosPadrao = [
         { nome: 'Carlos Menezes', nota: 5, texto: 'Melhor barba da região!' },
         { nome: 'André Silva', nota: 5, texto: 'Degradê impecável. Voltarei sempre.' },
         { nome: 'Marcos Pereira', nota: 4, texto: 'Ambiente top, agende com antecedência.' }
     ];
+
+    var depoimentos = localStorage.getItem('depoimentos') === null
+        ? depoimentosPadrao
+        : lerStorage('depoimentos');
+
+    function guardarDep() {
+        localStorage.setItem('depoimentos', JSON.stringify(depoimentos));
+    }
 
     function mostrarDepoimentos() {
         var lista = document.getElementById('lista');
@@ -175,7 +243,7 @@ if (formDep) {
             html += '<article class="dep">' +
                 '<strong>' + escaparHtml(d.nome) + '</strong> - ' + d.nota + ' estrelas' +
                 '<p>' + escaparHtml(d.texto) + '</p>' +
-                '<button class="btn btn-sm btn-danger" onclick="remover(' + i + ')">Remover</button>' +
+                '<button class="btn btn-sm btn-danger" data-i="' + i + '">Remover</button>' +
                 '</article>';
         }
 
@@ -184,6 +252,7 @@ if (formDep) {
 
     function remover(i) {
         depoimentos.splice(i, 1);
+        guardarDep();
         mostrarDepoimentos();
     }
 
@@ -197,8 +266,15 @@ if (formDep) {
         };
 
         depoimentos.push(novo);
+        guardarDep();
         mostrarDepoimentos();
         formDep.reset();
+    });
+
+    // Um único listener para os botões Remover
+    document.getElementById('lista').addEventListener('click', function (e) {
+        var botao = e.target.closest('button[data-i]');
+        if (botao) remover(Number(botao.dataset.i));
     });
 
     mostrarDepoimentos();
