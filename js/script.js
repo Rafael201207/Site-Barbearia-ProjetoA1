@@ -150,7 +150,6 @@ if (formAgenda) {
         document.getElementById('data').value = a.data;
         document.getElementById('hora').value = a.hora;
 
-        // Se o agendamento for antigo, o calendário precisa aceitar a data original
         document.getElementById('data').min = a.data < hoje() ? a.data : hoje();
         barbeiroManual = true;
         atualizarDica(a.servico);
