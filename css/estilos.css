@@ -93,9 +93,28 @@ a {
     border: 2px solid #774700;
 }
 
+.campo:hover {
+    border-color: #f7b11b;
+}
+
+input.campo[placeholder]:invalid:not(:placeholder-shown),
+textarea.campo:invalid:not(:placeholder-shown) {
+    border-color: #dc3545;
+}
+
+#dicaBarbeiro {
+    color: #f5efe3;
+}
+
 .campo:focus {
     border-color: #f7b11b;
     box-shadow: 0 0 6px #f7b11b;
+}
+
+.galeria {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
 }
 
 .galeria img {
@@ -104,17 +123,16 @@ a {
     object-fit: cover;
 }
 
+@media (min-width: 768px) {
+    .galeria {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
 .caixa {
     margin-top: 30px;
     padding: 20px;
     border-left: 5px solid #f7b11b;
-}
-
-.dep {
-    background-color: #1a1410;
-    border-left: 5px solid #f7b11b;
-    padding: 12px;
-    margin-bottom: 12px;
 }
 
 .rodape {

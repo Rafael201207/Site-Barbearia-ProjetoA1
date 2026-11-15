@@ -311,3 +311,13 @@ if (formDep) {
 
     mostrarDepoimentos();
 }
+
+var botaoMenu = document.querySelector('.botao-menu');
+
+if (botaoMenu) {
+    botaoMenu.addEventListener('click', function () {
+        var menu = document.getElementById('menu');
+        var aberto = menu.classList.toggle('aberto');
+        botaoMenu.setAttribute('aria-expanded', aberto);
+    });
+}
