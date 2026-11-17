@@ -1,24 +1,24 @@
 function escaparHtml(texto) {
-    var div = document.createElement('div');
+    const div = document.createElement('div');
     div.textContent = texto;
     return div.innerHTML;
 }
 
 function lerStorage(chave) {
     try {
-        var salvo = localStorage.getItem(chave);
+        const salvo = localStorage.getItem(chave);
         return salvo ? JSON.parse(salvo) : [];
     } catch (erro) {
         return [];
     }
 }
 
-var ultimoScroll = 0;
-var header = document.querySelector('header');
+let ultimoScroll = 0;
+const header = document.querySelector('header');
 
 if (header) {
     window.addEventListener('scroll', function () {
-        var scrollAtual = window.scrollY;
+        const scrollAtual = window.scrollY;
 
         if (scrollAtual <= 0) {
             header.classList.remove('header-hidden');
@@ -35,13 +35,14 @@ if (header) {
     });
 }
 
-var formAgenda = document.getElementById('formAgenda');
+const formAgenda = document.getElementById('formAgenda');
 
 if (formAgenda) {
-    var agendamentos = lerStorage('agendamentos');
-    var posicaoEditando = -1;
+    let agendamentos = lerStorage('agendamentos');
+    let posicaoEditando = -1;
+    let barbeiroManual = false;
 
-    var especialistaDoServico = {
+    const especialistaDoServico = {
         'Corte Clássico': 'Rodrigo',
         'Barba Completa': 'Rodrigo',
         'Corte + Barba': 'Thiago',
@@ -50,30 +51,70 @@ if (formAgenda) {
         'Sobrancelha': 'Felipe'
     };
 
-    var barbeiroManual = false;
+    const duracaoDoServico = {
+        'Corte Clássico': 40,
+        'Barba Completa': 30,
+        'Corte + Barba': 70,
+        'Degradê': 45,
+        'Pigmentação': 50,
+        'Sobrancelha': 15,
+        'Hidratação': 30
+    };
+
+    const fechamentoSabado = 18 * 60;
+    const fechamentoSemana = 20 * 60;
 
     function guardar() {
         localStorage.setItem('agendamentos', JSON.stringify(agendamentos));
     }
 
     function hoje() {
-        var d = new Date();
+        const d = new Date();
         return d.getFullYear() + '-' +
             String(d.getMonth() + 1).padStart(2, '0') + '-' +
             String(d.getDate()).padStart(2, '0');
     }
 
     function horaAgora() {
-        var d = new Date();
+        const d = new Date();
         return String(d.getHours()).padStart(2, '0') + ':' +
             String(d.getMinutes()).padStart(2, '0');
     }
 
+    function diaDaSemana(dataIso) {
+        const partes = dataIso.split('-');
+        return new Date(Number(partes[0]), Number(partes[1]) - 1, Number(partes[2])).getDay();
+    }
+
+    function minutosDaHora(hora) {
+        const partes = hora.split(':');
+        return Number(partes[0]) * 60 + Number(partes[1]);
+    }
+
+    function verificarFuncionamento(novo) {
+        const dia = diaDaSemana(novo.data);
+
+        if (dia === 0) {
+            return 'A barbearia fecha aos domingos. Escolha outro dia.';
+        }
+
+        const fechamento = dia === 6 ? fechamentoSabado : fechamentoSemana;
+        const fim = minutosDaHora(novo.hora) + (duracaoDoServico[novo.servico] || 0);
+
+        if (fim > fechamento) {
+            const textoFechamento = dia === 6 ? '18h (sábado)' : '20h (segunda a sexta)';
+            return 'Esse serviço (' + duracaoDoServico[novo.servico] + ' min) terminaria depois do fechamento, às ' +
+                textoFechamento + '. Escolha um horário mais cedo.';
+        }
+
+        return '';
+    }
+
     function existeConflito(novo) {
-        for (var i = 0; i < agendamentos.length; i++) {
-            if (i == posicaoEditando) continue;
-            var a = agendamentos[i];
-            if (a.barbeiro == novo.barbeiro && a.data == novo.data && a.hora == novo.hora) {
+        for (let i = 0; i < agendamentos.length; i++) {
+            if (i === posicaoEditando) continue;
+            const a = agendamentos[i];
+            if (a.barbeiro === novo.barbeiro && a.data === novo.data && a.hora === novo.hora) {
                 return true;
             }
         }
@@ -85,10 +126,10 @@ if (formAgenda) {
     }
     restaurarMin();
 
-    var dica = document.getElementById('dicaBarbeiro');
+    const dica = document.getElementById('dicaBarbeiro');
 
     function atualizarDica(servico) {
-        var esp = especialistaDoServico[servico];
+        const esp = especialistaDoServico[servico];
         dica.textContent = esp
             ? 'Especialista neste serviço: ' + esp + ' (você pode escolher outro barbeiro).'
             : '';
@@ -102,7 +143,7 @@ if (formAgenda) {
     });
 
     document.getElementById('barbeiro').addEventListener('change', function () {
-        barbeiroManual = this.value != '';
+        barbeiroManual = this.value !== '';
     });
 
     formAgenda.addEventListener('reset', function () {
@@ -112,17 +153,17 @@ if (formAgenda) {
     });
 
     function mostrarLista() {
-        var tabela = document.getElementById('lista');
-        var html = '';
+        const tabela = document.getElementById('lista');
+        let html = '';
 
         document.getElementById('semRegistros').style.display =
-            agendamentos.length == 0 ? 'block' : 'none';
+            agendamentos.length === 0 ? 'block' : 'none';
 
-        for (var i = 0; i < agendamentos.length; i++) {
-            var a = agendamentos[i];
+        for (let i = 0; i < agendamentos.length; i++) {
+            const a = agendamentos[i];
 
-            var partes = a.data.split('-');
-            var dataBr = partes[2] + '/' + partes[1] + '/' + partes[0];
+            const partes = a.data.split('-');
+            const dataBr = partes[2] + '/' + partes[1] + '/' + partes[0];
 
             html += '<tr>' +
                 '<td>' + escaparHtml(a.nome) + '</td>' +
@@ -142,7 +183,7 @@ if (formAgenda) {
     }
 
     function editar(i) {
-        var a = agendamentos[i];
+        const a = agendamentos[i];
         document.getElementById('nome').value = a.nome;
         document.getElementById('telefone').value = a.telefone;
         document.getElementById('servico').value = a.servico;
@@ -162,7 +203,7 @@ if (formAgenda) {
         if (confirm('Excluir este agendamento?')) {
             agendamentos.splice(i, 1);
 
-            if (posicaoEditando == i) {
+            if (posicaoEditando === i) {
                 posicaoEditando = -1;
                 document.getElementById('btnSalvar').textContent = 'Salvar';
                 formAgenda.reset();
@@ -178,7 +219,7 @@ if (formAgenda) {
     formAgenda.addEventListener('submit', function (e) {
         e.preventDefault();
 
-        var novo = {
+        const novo = {
             nome: document.getElementById('nome').value.trim(),
             telefone: document.getElementById('telefone').value,
             servico: document.getElementById('servico').value,
@@ -187,11 +228,17 @@ if (formAgenda) {
             hora: document.getElementById('hora').value
         };
 
-        var original = posicaoEditando == -1 ? null : agendamentos[posicaoEditando];
-        var mudouHorario = !original || original.data != novo.data || original.hora != novo.hora;
+        const original = posicaoEditando === -1 ? null : agendamentos[posicaoEditando];
+        const mudouHorario = !original || original.data !== novo.data || original.hora !== novo.hora;
 
-        if (mudouHorario && (novo.data < hoje() || (novo.data == hoje() && novo.hora <= horaAgora()))) {
+        if (mudouHorario && (novo.data < hoje() || (novo.data === hoje() && novo.hora <= horaAgora()))) {
             alert('Esse horário já passou. Escolha uma data e hora futuras.');
+            return;
+        }
+
+        const avisoFuncionamento = verificarFuncionamento(novo);
+        if (avisoFuncionamento !== '') {
+            alert(avisoFuncionamento);
             return;
         }
 
@@ -201,7 +248,7 @@ if (formAgenda) {
             return;
         }
 
-        if (posicaoEditando == -1) {
+        if (posicaoEditando === -1) {
             agendamentos.push(novo);
             alert('Agendamento salvo!');
         } else {
@@ -228,38 +275,38 @@ if (formAgenda) {
     });
 
     document.getElementById('lista').addEventListener('click', function (e) {
-        var botao = e.target.closest('button[data-acao]');
+        const botao = e.target.closest('button[data-acao]');
         if (!botao) return;
 
-        var i = Number(botao.dataset.i);
-        if (botao.dataset.acao == 'editar') editar(i);
-        else if (botao.dataset.acao == 'excluir') excluir(i);
+        const i = Number(botao.dataset.i);
+        if (botao.dataset.acao === 'editar') editar(i);
+        else if (botao.dataset.acao === 'excluir') excluir(i);
     });
 
     mostrarLista();
 }
 
-var formContato = document.getElementById('formContato');
+const formContato = document.getElementById('formContato');
 
 if (formContato) {
     formContato.addEventListener('submit', function (e) {
         e.preventDefault();
-        var nome = document.getElementById('nome').value;
+        const nome = document.getElementById('nome').value;
         alert('Obrigado, ' + nome + '! Mensagem enviada.');
         formContato.reset();
     });
 }
 
-var formDep = document.getElementById('formDep');
+const formDep = document.getElementById('formDep');
 
 if (formDep) {
-    var depoimentosPadrao = [
+    const depoimentosPadrao = [
         { nome: 'Carlos Menezes', nota: 5, texto: 'Melhor barba da região!' },
         { nome: 'André Silva', nota: 5, texto: 'Degradê impecável. Voltarei sempre.' },
         { nome: 'Marcos Pereira', nota: 4, texto: 'Ambiente top, agende com antecedência.' }
     ];
 
-    var depoimentos = localStorage.getItem('depoimentos') === null
+    const depoimentos = localStorage.getItem('depoimentos') === null
         ? depoimentosPadrao
         : lerStorage('depoimentos');
 
@@ -268,11 +315,11 @@ if (formDep) {
     }
 
     function mostrarDepoimentos() {
-        var lista = document.getElementById('lista');
-        var html = '';
+        const lista = document.getElementById('lista');
+        let html = '';
 
-        for (var i = 0; i < depoimentos.length; i++) {
-            var d = depoimentos[i];
+        for (let i = 0; i < depoimentos.length; i++) {
+            const d = depoimentos[i];
             html += '<article class="dep">' +
                 '<strong>' + escaparHtml(d.nome) + '</strong> - ' + d.nota + ' estrelas' +
                 '<p>' + escaparHtml(d.texto) + '</p>' +
@@ -292,7 +339,7 @@ if (formDep) {
     formDep.addEventListener('submit', function (e) {
         e.preventDefault();
 
-        var novo = {
+        const novo = {
             nome: document.getElementById('nome').value.trim(),
             nota: Number(document.getElementById('nota').value),
             texto: document.getElementById('texto').value.trim()
@@ -305,19 +352,19 @@ if (formDep) {
     });
 
     document.getElementById('lista').addEventListener('click', function (e) {
-        var botao = e.target.closest('button[data-i]');
+        const botao = e.target.closest('button[data-i]');
         if (botao) remover(Number(botao.dataset.i));
     });
 
     mostrarDepoimentos();
 }
 
-var botaoMenu = document.querySelector('.botao-menu');
+const botaoMenu = document.querySelector('.botao-menu');
 
 if (botaoMenu) {
     botaoMenu.addEventListener('click', function () {
-        var menu = document.getElementById('menu');
-        var aberto = menu.classList.toggle('aberto');
+        const menu = document.getElementById('menu');
+        const aberto = menu.classList.toggle('aberto');
         botaoMenu.setAttribute('aria-expanded', aberto);
     });
 }
